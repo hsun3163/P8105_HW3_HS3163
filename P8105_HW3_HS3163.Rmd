@@ -1,0 +1,112 @@
+---
+title: "P8105_HW3_HS3163"
+author: "Hao Sun"
+date: "10/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+
+library(tidyverse)
+library(p8105.datasets)
+
+```
+
+## Problem 1
+
+This problem uses the Instacart data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets using:
+
+The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations. Then, do or answer the following (commenting on the results of each):
+
+**How many aisles are there, and which aisles are the most items ordered from?
+
+**Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items
+ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+
+**Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+
+** Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+
+
+```{r Problem 1 pt1 EDA }
+####Load the data
+data("instacart")
+View(instacart)
+###Preping material
+DOW_Name = c( "Saturday","Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+
+###Tidy up the table
+instacart_tidy<-instacart%>%
+  ###Factorized the aisle, department, and change order_dow into human readable factor
+  mutate(
+    aisle = forcats::fct_reorder(factor(aisle),aisle_id),
+    department = forcats::fct_reorder(factor(department),department_id),
+    product_name = forcats::fct_reorder(factor(product_name),product_id),
+    ##According to the github hosting the data, 0 = Saturday
+    order_dow = order_dow+1,
+    order_dow = forcats::fct_reorder(factor(DOW_Name[order_dow]),order_dow)
+  )%>%
+  #####Creat group by the aforementioned factor
+  group_by(aisle,department,order_dow)
+##Examing which variables are used to uniquely identify each entry.
+instacart%>%
+  select(order_id, add_to_cart_order)%>%distinct()%>%count()
+instacart%>%
+  select(order_id, product_id)%>%distinct()%>%count()
+##Check whether order_id and user_id are in 1 to 1 relationship
+instacart%>%
+  select(order_id,user_id)%>%distinct()%>%count()
+instacart%>%
+  select(user_id)%>%distinct()%>%count()
+##Check whether any users have ordered any product more than once within the dataset.
+instacart%>%
+  select(product_id,user_id)%>%distinct()%>%count()
+instacart_tidy
+
+```
+This data set has 1,384,617 entries with 15 variables.Each entry enssentially records the addition of one product to the basket of one order, and was uniquely identified by the combination of order_id and add_to_cart_order or product_id.  Among the variables,  "order_id", and "add_to_cart_order" are used to identify each records. Considering the potential incidents of adding one product twice to the cart, granted not recorded in this dataset,"product_id" shall not be treated as a part of the index variables. Instead, "product_id" alone with "aisle_id" and "department_id" are metadata describing the content of each addition of one product. "product_name", "aisle" and "department" respectifully lable the aforementioned metadata for human readablity. Besides, "reordered","order_number","order_dow","days_since_prior_order"
+ 
+
+It is worth mentioned that in the data et, no user_id are associated with more than one order_id. According to the presense of "reordered" variable, it is unlikely that either the system assigned a new user ID for each order or no user have post repeated orders. 
+
+, the system automatically.
+
+
+**How many aisles are there, and which aisles are the most items ordered from?
+__Answer__ 
+There are `instacart%>%distinct(aisle)%>%count` aisles in the data set.
+
+```{r}
+data("instacart")
+View(instacart)
+instacart%>%
+  group_by(aisle)%>%
+  summarize(n = n())%>%q
+  ?order_by()
+
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
