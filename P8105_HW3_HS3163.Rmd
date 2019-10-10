@@ -30,21 +30,9 @@ This problem uses the Instacart data. DO NOT include this dataset in your local 
 
 The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations. Then, do or answer the following (commenting on the results of each):
 
-**How many aisles are there, and which aisles are the most items ordered from?
-
-**Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items
-ordered. Arrange aisles sensibly, and organize your plot so others can read it.
-
-**Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
-
-** Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
-
-
-
 ```{r Problem 1 pt1 EDA }
 ####Load the data
 data("instacart")
-View(instacart)
 ###Preping material
 DOW_Name = c( "Saturday","Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
@@ -58,9 +46,7 @@ instacart_tidy<-instacart%>%
     ##According to the github hosting the data, 0 = Saturday
     order_dow = order_dow+1,
     order_dow = forcats::fct_reorder(factor(DOW_Name[order_dow]),order_dow)
-  )%>%
-  #####Creat group by the aforementioned factor
-  group_by(aisle,department,order_dow)
+  )
 ##Examing which variables are used to uniquely identify each entry.
 instacart%>%
   select(order_id, add_to_cart_order)%>%distinct()%>%count()
@@ -77,36 +63,115 @@ instacart%>%
 instacart_tidy
 
 ```
-This data set has 1,384,617 entries with 15 variables.Each entry enssentially records the addition of one product to the basket of one order, and was uniquely identified by the combination of order_id and add_to_cart_order or product_id.  Among the variables,  "order_id", and "add_to_cart_order" are used to identify each records. Considering the potential incidents of adding one product twice to the cart, granted not recorded in this dataset,"product_id" shall not be treated as a part of the index variables. Instead, "product_id" alone with "aisle_id" and "department_id" are metadata describing the content of each addition of one product. "product_name", "aisle" and "department" respectifully lable the aforementioned metadata for human readablity. Besides, "reordered","order_number","order_dow","days_since_prior_order"
+This data set has 1,384,617 entries with 15 variables.Each entry enssentially records the addition of one product to the basket of one order, and was uniquely identified by the combination of order_id and add_to_cart_order or product_id.  Among the variables,  "order_id", and "add_to_cart_order" are used to identify each records. Considering the potential incidents of adding one product twice to the cart, granted not recorded in this dataset,"product_id" shall not be treated as a part of the index variables. Instead, "product_id" alone with "aisle_id" and "department_id" are metadata describing the content of each addition of one product. "product_name", "aisle" and "department" respectifully lable the aforementioned metadata for human readablity. Besides, "reordered","order_number","order_dow","days_since_prior_order" describe each orders' temperal attributes, from which comsumer behavior estimation may be derived. "eval_set" variables described the portion of the dataset among the original instacart data collections, and are not relevent to our analysis. 
  
-
-It is worth mentioned that in the data et, no user_id are associated with more than one order_id. According to the presense of "reordered" variable, it is unlikely that either the system assigned a new user ID for each order or no user have post repeated orders. 
-
-, the system automatically.
+It is worth mentioned that in the dataset, no user_id are associated with more than one order_id. After examning the full instacart collection, it was revealed that only one order from each user was added to the train eval_set. This data set also did not included the quantity of each product purchased. For instance, for the order with order_id 1, it was shown that the user,whose id is 112108m, added 8 products, ranging from "Bulgarian Yogurt" to "Organic Whole String Cheese", but there is not information indicating, say, the number of bottles of Bulgarian Yogurt the user bought.
 
 
-**How many aisles are there, and which aisles are the most items ordered from?
+*  How many aisles are there, and which aisles are the most items ordered from?
 __Answer__ 
-There are `instacart%>%distinct(aisle)%>%count` aisles in the data set.
+There are `r instacart%>%distinct(aisle)%>%count` aisles in the data set.
 
-```{r}
-data("instacart")
-View(instacart)
-instacart%>%
+```{r pb1 p1}
+#Finding which aisles are the most items ordered from
+instacart_tidy%>%
+##Count the number of items added to order from each aisles.
+  count(aisle)%>%
+##Finding the aisle that is correlated to the most items added to order from each aisles.
+  filter(n == max(n))%>%
+  pull(aisle)%>%as.character()
+```
+The fresh vegetable is the aisle the most items ordered from
+
+It occurs that out of the 134 aisles, fresh vegetable is the aisle with the most item ordered from. This result is consistent with the logo, a carrot, and one of its advertising images on Apple AppStore, a bag of fresh vegetables, used by instacart APP.
+
+* Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items
+ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+
+__Answer__
+```{r pb 1 p2}
+instacart_tidy%>%
+##Count the number of items added to order from each aisles, label each aisle alone with the department it belonged to.
+  group_by(department,aisle)%>%
+  summarise(n())%>%
+  group_by(department)%>%
+  ##Rename the n() column
+  mutate(items_ordered_from = `n()`)%>%
+  select(-`n()`)%>%
+##Finding the aisle with more than 10000 purchases.
+  filter(items_ordered_from >= 10000)%>%
+  ##Order the aisle by the number of its sales, also labed each aisle for their correspond department 
+  ggplot(aes(x = reorder(aisle,items_ordered_from),
+             y = items_ordered_from , 
+             fill = department))+
+  geom_col()+
+  labs(
+    title = "Number of item added to orders per aisle",
+    x = "Aisle",
+    y = "# of item added to orders"
+  )+
+##Flip the graph so that the name of each aisle become visible
+  coord_flip()
+
+```
+
+The first three most popular aisles, and by large margins, are fresh vegetables, fresh fruits, and package vegetable fruits. All of the three aisles are from the produce department, which generally implies that "the products are fresh and in the same state as where and when they were harvested." It turns out that the users included in this dataset primarily rely on instacart to the acquired fresh products. It makes senes to order fresh products only when they are about to be consumed. Otherwise, it defeats the purpose of ordering fresh food. Therefore users are more likely to order items from the produce department in a different order, and, due to the lack of a "quantities per order" variable, inflate the popularity.
+
+
+
+
+* Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+```{r pb1 p3}
+instacart_tidy%>%
+  filter(aisle == "baking ingredients" | aisle == "dog food care"  | aisle == "packaged vegetables fruits" )%>%
+##Count the number of items added to order from each aisles.
+  count(aisle,product_name)%>%
   group_by(aisle)%>%
-  summarize(n = n())%>%q
-  ?order_by()
+  arrange(desc(n),.by_group = TRUE)%>%
+##Finding the top 3 most sold item from each aisle
+filter(n>=
+  ##Finding the largest among 
+    max(
+    ##Among  n
+      n[
+    ##that is neither the second largest
+      n!=max(n[n!=max(n)]) & 
+    ##Nor the first largest
+      n!=max(n)]
+      ))%>%
+  knitr::kable()
+```
+It is apperant that the three aisles have quite a different popularity for there are a order of manitude of differences between the item  with the same rank popularity from each aisles.
+
+
+
+* Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+```{r pb1 p4 }
+instacart_tidy%>%
+##Select anything that fell in the catagory of Pink Lady Apples or Coffee Ice Cream
+  filter(str_detect(product_name,'Pink Lady Apples') | str_detect(product_name,'Coffee Ice Cream') )%>%
+##Aggregate similar products
+  mutate(product_name = 
+           replace(
+             product_name,
+             str_detect(product_name,'Pink Lady Apples'),
+            'Pink Lady Apples'))%>%
+    mutate(product_name = 
+           replace(
+             product_name,
+             str_detect(product_name,'Coffee Ice Cream'),
+            'Coffee Ice Cream'))%>%
+##Count the number of items added to order from each aisles.
+  group_by(product_name,order_dow)%>%
+  summarise(`mean hour of the day` = mean(order_hour_of_day))%>%
+  mutate(`mean hour of the day` = round(`mean hour of the day`) )%>%
+  pivot_wider(names_from = order_dow, values_from = `mean hour of the day`)%>%
+    knitr::kable()
 
 ```
+Generally, the meantime of the order of coffee ice cream is later than that of pink lady apples, which implies that users are more likely to consume Coffee Ice Cream later the day. However, taking the mean of the hours of the day may not be a good indicator on the consumer behavior because it is likely that the ordering of a product may take place both in the morning and at night and produce a mean of noon, which is an accurate description of the scenario. In this case, modes would be a more appropriate indicator to account for this effect.
 
 
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
