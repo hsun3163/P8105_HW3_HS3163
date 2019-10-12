@@ -289,5 +289,69 @@ brfss_smart2010_tidy_focus%>%
 
 ```
 
+## Problem 3
+Accelerometers have become an appealing alternative to self-report techniques for studying physical activity in observational studies and clinical trials, largely because of their relative objectivity. During observation periods, the devices measure “activity counts” in a short period; one-minute intervals are common. Because accelerometers can be worn comfortably and unobtrusively, they produce around-the-clock observations.
+
+This problem uses five weeks of accelerometer data collected on a 63 year-old male with BMI 25, who was admitted to the Advanced Cardiac Care Center of Columbia University Medical Center and diagnosed with congestive heart failure (CHF). The data can be downloaded here. In this spreadsheet, variables activity.* are the activity counts for each minute of a 24-hour day starting at midnight.
+
+* Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc).
+```{r}
+##Load data
+accel_data <-read_csv("./Data/accel_data.csv")
+colnames(accel_data)
+#Tidy the data
+accel_data_tidy<-
+  accel_data%>%
+  pivot_longer(activity.1:activity.1440, names_to = "minutes" , names_prefix = "activity.")%>%
+  mutate(days_of_week = factor(day,levels =  c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday","Saturday","Sunday")),
+         minute_of_day = as.numeric(minutes),
+         activity = value,
+         hour_of_day = floor(minute_of_day/60),
+         weekend_or_weekday = (days_of_week =="Saturday" |days_of_week == "Sunday"  ),
+         weekend_or_weekday = factor(weekend_or_weekday, labels = c("weekday","weekend")))%>%
+        select(-day,-minutes,-value)
+
+
+```
+
+
+
+* Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+```{r}
+summary_accel<-accel_data_tidy_reordered%>%
+  group_by(week,weekend_or_weekday,days_of_week,day_id)%>%
+  summarise(sum_activity_per_day = sum(activity))
+##The day ID in the data set does not make sense at all, therefore, a day order will be added to try to elucidated the confusion
+summary_accel<-summary_accel%>%ungroup()%>%mutate(day_order = seq(1,35))
+summary_accel%>%
+  ggplot(aes(x= day_order, y = sum_activity_per_day, fill =weekend_or_weekday ))+
+  geom_col()
+  
+  
+  
+  
+```
+
+
+
+* Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+
+
+```{r}
+summary_accel_by_hour<-accel_data_tidy_reordered%>%
+  group_by(week,weekend_or_weekday,days_of_week,hour_of_day,day_id)%>%
+  summarise(sum_activity_per_hour = sum(activity))
+summary_accel_by_hour
+##Order the hour in sequence again.
+summary_accel_by_hour<-summary_accel_by_hour%>%ungroup()%>%mutate(hr_order = seq(1,875))
+
+summary_accel_by_hour%>%
+  ggplot(aes(x= hr_order , y = sum_activity_per_hour , color = days_of_week ))+
+  geom_line()
+
+
+```
+
+
 
 
