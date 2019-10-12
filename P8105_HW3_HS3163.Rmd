@@ -2,7 +2,7 @@
 title: "P8105_HW3_HS3163"
 author: "Hao Sun"
 date: "10/8/2019"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -70,6 +70,7 @@ It is worth mentioned that in the dataset, no user_id are associated with more t
 
 
 *  How many aisles are there, and which aisles are the most items ordered from?
+
 __Answer__ 
 There are `r instacart%>%distinct(aisle)%>%count` aisles in the data set.
 
@@ -120,8 +121,8 @@ The first three most popular aisles, and by large margins, are fresh vegetables,
 
 
 
-
 * Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+__Answer__
 ```{r pb1 p3}
 instacart_tidy%>%
   filter(aisle == "baking ingredients" | aisle == "dog food care"  | aisle == "packaged vegetables fruits" )%>%
@@ -142,6 +143,7 @@ filter(n>=
       ))%>%
   knitr::kable()
 ```
+
 It is apperant that the three aisles have quite a different popularity for there are a order of manitude of differences between the item  with the same rank popularity from each aisles.
 
 
@@ -170,6 +172,7 @@ instacart_tidy%>%
     knitr::kable()
 
 ```
+
 Generally, the meantime of the order of coffee ice cream is later than that of pink lady apples, which implies that users are more likely to consume Coffee Ice Cream later the day. However, taking the mean of the hours of the day may not be a good indicator on the consumer behavior because it is likely that the ordering of a product may take place both in the morning and at night and produce a mean of noon, which is an accurate description of the scenario. In this case, modes would be a more appropriate indicator to account for this effect.
 
 ## Problem 2
@@ -178,7 +181,6 @@ his problem uses the BRFSS data. DO NOT include this dataset in your local data 
 
 ```{r PB 2 Data loading, cache = TRUE}
 data(brfss_smart2010)
-View(brfss_smart2010)
 ```
 
 
@@ -210,17 +212,17 @@ brfss_smart2010_tidy_focus<-brfss_smart2010_tidy%>%
 * include only responses from “Excellent” to “Poor”
 ```{r pb2 pt 3}
 brfss_smart2010_tidy_focus%>%
-#Check what response are there.
-  select(response)%>%distinct()%>%pull
+  ##Selecting only the desired responses.
+  filter(response == "Excellent" |response == "Very good" |response == "Good" |response == "Fair"| response == "Poor")
+
+
 ```
-It occurs that only responses from “Excellent” to “Poor” are included.
 
 * organize responses as a factor taking levels ordered from “Poor” to “Excellent”
 
 ```{r pb2 pt 4}
 response_order <- factor(c("Excellent","Very good","Good","Fair","Poor"))%>%
 forcats::fct_reorder(c(5,4,3,2,1))
-
 brfss_smart2010_tidy_focus<-brfss_smart2010_tidy_focus%>%
   mutate(response = factor(response,levels = levels(response_order)))
 ```
@@ -249,10 +251,10 @@ states_2010<-brfss_smart2010_tidy_focus%>%
 ```
 The CA, CO, FL, MA, MD, NC, NE, NJ, NY, OH, PA, SC, TX, and WA states were observed at 7 or more locations in 2010
 
-Five out of six of the states, except CT, that were observed at 7 or more locations still keep their places in 2010. There are 9 new states that were observed at 7 or more locations in 2010. `r stop`
+Five out of six of the states, except CT, that were observed at 7 or more locations still keep their places in 2010. There are 9 new states that were observed at 7 or more locations in 2010. 
 
 
-Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. 
+* Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. 
 ```{r pb2 pt 5.3}
 Mean_state_per_year<-brfss_smart2010_tidy_focus%>%
     filter(response == "Excellent")%>%
@@ -262,6 +264,7 @@ Mean_state_per_year<-brfss_smart2010_tidy_focus%>%
   transmute(
             state = state_abbr,
             averages_data_values = round(averages,digits = 2))
+Mean_state_per_year
 ```
 
 
@@ -269,12 +272,12 @@ Make a “spaghetti” plot of this average value over time within a state (that
 ```{r}
 Mean_state_per_year%>%
 ggplot(aes(x = year, y = averages_data_values, color = state))+
-geom_line()
+geom_point()+geom_line()
 ```
+It occurs that the state WY generally has the lowest Excellent response value among all the states, especially in the year 2005. IN was doing ok before 2007, but it dropped quite drastically in 2007. Overall, DC has the best performance throughout the years. UT and CT were started high but fell quite sharply in the coming years. After that, CT stayed average, but UT rose up again after 2005.
 
 
-
-Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+* Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
 
 ```{r}
 brfss_smart2010_tidy_focus%>% 
@@ -298,8 +301,7 @@ This problem uses five weeks of accelerometer data collected on a 63 year-old ma
 ```{r}
 ##Load data
 accel_data <-read_csv("./Data/accel_data.csv")
-colnames(accel_data)
-#Tidy the data
+##Tidy the data
 accel_data_tidy<-
   accel_data%>%
   pivot_longer(activity.1:activity.1440, names_to = "minutes" , names_prefix = "activity.")%>%
@@ -318,40 +320,57 @@ accel_data_tidy<-
 
 * Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 ```{r}
-summary_accel<-accel_data_tidy_reordered%>%
+summary_accel<-accel_data_tidy%>%
+  ##Finding the sum of activity of each day
   group_by(week,weekend_or_weekday,days_of_week,day_id)%>%
   summarise(sum_activity_per_day = sum(activity))
 ##The day ID in the data set does not make sense at all, therefore, a day order will be added to try to elucidated the confusion
 summary_accel<-summary_accel%>%ungroup()%>%mutate(day_order = seq(1,35))
+
+##Ploting the graph
 summary_accel%>%
   ggplot(aes(x= day_order, y = sum_activity_per_day, fill =weekend_or_weekday ))+
-  geom_col()
+  geom_col()+
+labs(
+    title = "Total activity per day",
+    x = "Time Progression(Day)",
+    y = " Total Activity" )
+
   
   
   
   
 ```
 
-
+It occurs that the activity of the man is more or less consistent on the weekdays by varied a lot during the weekend.
 
 * Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
 
 
 ```{r}
-summary_accel_by_hour<-accel_data_tidy_reordered%>%
+summary_accel_by_hour<-accel_data_tidy%>%
   group_by(week,weekend_or_weekday,days_of_week,hour_of_day,day_id)%>%
   summarise(sum_activity_per_hour = sum(activity))
 summary_accel_by_hour
 ##Order the hour in sequence again.
-summary_accel_by_hour<-summary_accel_by_hour%>%ungroup()%>%mutate(hr_order = seq(1,875))
+summary_accel_by_hour<-summary_accel_by_hour%>%ungroup()%>%mutate(hr_order = seq(1,875))%>%
+    ##Find sum activity per week,which is used for potential normalization that control for weekly differences.
+  group_by(week)%>%mutate(sum_activity_per_week = sum(sum_activity_per_hour))
 
 summary_accel_by_hour%>%
-  ggplot(aes(x= hr_order , y = sum_activity_per_hour , color = days_of_week ))+
-  geom_line()
+  ggplot(aes(x= hr_order , y = sum_activity_per_hour , fill = days_of_week ))+
+ geom_col()+
+labs(
+    title = "24-hour normalized activity time courses for each day",
+    x = "Time Progression(Hr)", 
+    y = "Total Activity" )
 
 
 ```
 
+Before any conclusion was made, it is worth pointing out the abnormality of the activity data on Monday of the first week and Saturday of the fourth and fifth weeks. Instead of complete inactivity. A more likely explanation of such anomalies may be the malfunction or detach of Accelerometer on Saturdays. 
+
+According to the produced graphs, generally speaking, the man usually wakes up at 5 to 6 am, where a shape increase in activity can be observed. The man usually sleeps after 10 pm, and only on rare occasions did he sleep before 11. Throughout the weeks, the pattern man's activity on Wed, Fri, and Sun is relatively more consistent than the other days of the week. It occurs that the man may have a habit of exercise during Friday night and Sunday morning, indicated by the peak at 8 pm on Friday, and 10 am Sunday, respectively. The abnormal activity on Friday of the fourth week may be due to the malfunction of the accelerometer as well. For the first three weeks, the man occasionally takes naps at noon, indicated by the sudden drops of activity around 11 am to 1 pm. 
 
 
 
